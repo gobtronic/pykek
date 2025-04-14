@@ -1,0 +1,24 @@
+[project]
+name = "pykek"
+version = "0.1.0"
+description = "A WoW Vanilla addons manager"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gitpython>=3.1.44",
+    "loguru>=0.7.3",
+    "platformdirs>=4.3.7",
+    "pygobject>=3.52.3",
+    "pyyaml>=6.0.2",
+    "pyyml>=0.0.2",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "pyfakefs>=5.8.0",
+    "pygobject-stubs>=2.13.0",
+    "pytest>=8.3.5",
+    "ruff>=0.11.0",
+    "types-pyyaml>=6.0.12.20250326",
+]
