@@ -1,4 +1,3 @@
-from email import header
 import re
 from gi.repository import Gtk, Adw  # type: ignore
 from pykek.backend.addon import Addon
@@ -8,29 +7,35 @@ class GitDialogController:
     def __init__(self, window: Adw.ApplicationWindow, addon: Addon) -> None:
         self._window = window
         self._addon = addon
-        self._view = GitDialog(self)
+        self._navigation_view = Adw.NavigationView()
+        self._dialog = Adw.Dialog(
+            child=self._navigation_view,
+            content_width=440,
+        )
+        setup_page = GitSetupPage(self)
+        self._navigation_view.replace([setup_page])
 
     def run(self) -> None:
-        self._view.present(self._window)
+        self._dialog.present(self._window)
 
     def addon_name(self) -> str:
         return self._addon.name
 
     def close(self) -> None:
-        self._view.close()
+        self._dialog.close()
 
-    def entry_row_did_change(self, text: str) -> None:
+    def entry_row_did_change(self, page, text: str) -> None:  # type: ignore # noqa: F821
         valid_url = self._is_valid_url(text)
-        self._view.enable_save_button(valid_url)
+        page.enable_save_button(valid_url)
 
     def _is_valid_url(self, text: str) -> bool:
         pattern = re.compile(
-            r"^https://"  # Protocol
-            r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"  # Domain
-            r"localhost|"  # Localhost
-            r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|"  # IPv4
-            r"\[?[A-F0-9]*:[A-F0-9:]+\]?)"  # IPv6
-            r"(?::\d+)?"  # Optional port
+            r"^https://"
+            r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"
+            r"localhost|"
+            r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+            r"\[?[A-F0-9]*:[A-F0-9:]+\]?)"
+            r"(?::\d+)?"
             r"(?:/?|[/?]\S+)$",
             re.IGNORECASE,
         )
@@ -39,11 +44,22 @@ class GitDialogController:
 
 
 class GitDialog(Adw.Dialog):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._setup_dialog()
+
+    ### UI
+
+    def _setup_dialog(self) -> None:
+        self.set_content_width(440)
+
+
+class GitSetupPage(Adw.NavigationPage):
     def __init__(self, controller: GitDialogController, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._controller = controller
-        self._setup_dialog()
-        self._setup_dialog_box()
+        self.set_title("Git")
+        self._setup_box()
 
         self._setup_header_bar()
         self._setup_content_box()
@@ -54,13 +70,9 @@ class GitDialog(Adw.Dialog):
 
     ### UI
 
-    def _setup_dialog(self) -> None:
-        self.set_title("Git")
-        self.set_content_width(440)
-
-    def _setup_dialog_box(self) -> None:
-        self._dialog_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self.set_child(self._dialog_box)
+    def _setup_box(self) -> None:
+        self._box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.set_child(self._box)
 
     def _setup_header_bar(self) -> None:
         header_bar = Adw.HeaderBar()
@@ -71,7 +83,7 @@ class GitDialog(Adw.Dialog):
         self._save_button.set_css_classes(["suggested-action"])
         self._save_button.set_sensitive(False)
         header_bar.pack_end(self._save_button)
-        self._dialog_box.append(header_bar)
+        self._box.append(header_bar)
 
     def _setup_content_box(self) -> None:
         self._content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -82,7 +94,7 @@ class GitDialog(Adw.Dialog):
         self._content_box.set_margin_start(25)
         self._content_box.set_margin_end(25)
         self._content_box.set_margin_bottom(35)
-        self._dialog_box.append(self._content_box)
+        self._box.append(self._content_box)
 
     def _setup_description_label(self) -> None:
         label = Gtk.Label()
@@ -114,7 +126,7 @@ class GitDialog(Adw.Dialog):
         self._controller.close()
 
     def _on_entry_row_change(self, entry_row: Adw.EntryRow) -> None:
-        self._controller.entry_row_did_change(entry_row.get_text())
+        self._controller.entry_row_did_change(self, entry_row.get_text())
 
     ### UI updates
 
