@@ -2,10 +2,12 @@ import threading
 from typing import List, Optional
 from gi.repository import Gtk, Adw  # type: ignore
 from pykek.backend.addon import Addon, AddonStatus, AddonStatusRepresentation
+from pykek.frontend.git_dialog import GitDialogController
 
 
 class AddonRowController:
-    def __init__(self, addon: Addon) -> None:
+    def __init__(self, window: Adw.ApplicationWindow, addon: Addon) -> None:
+        self._window = window
         self._addon = addon
         self._addon.reload_branches()
         self._view = AddonRow(self, addon)
@@ -52,6 +54,10 @@ class AddonRowController:
     def _switch_branch(self, branch: str) -> None:
         self._addon.switch_to_branch(branch)
         self._addon.refresh_toc_info()
+
+    def present_git_dialog(self) -> None:
+        controller = GitDialogController(self._window, self._addon)
+        controller.run()
 
 
 class AddonRow(Adw.ActionRow):
@@ -123,16 +129,18 @@ class AddonRow(Adw.ActionRow):
         if addon_status == AddonStatus.OUTDATED:
             self._action_button.set_sensitive(True)
         elif addon_status == AddonStatus.NON_GIT:
-            self._action_button.set_sensitive(
-                False
-            )  # TODO: Add support for setting-up addon repository link
+            self._action_button.set_sensitive(True)
         else:
             self._action_button.set_sensitive(False)
 
     ### Action
 
     def _on_action_button_clicked(self, button: Gtk.Button) -> None:
-        self._controller.update_addon()
+        addon_status = self._controller.current_addon_status()
+        if addon_status == AddonStatus.OUTDATED:
+            self._controller.update_addon()
+        elif addon_status == AddonStatus.NON_GIT:
+            self._controller.present_git_dialog()
 
     def _on_branches_dropdown_selection(self, dropdown: Gtk.DropDown, param) -> None:
         item = dropdown.get_selected_item()

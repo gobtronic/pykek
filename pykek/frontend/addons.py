@@ -8,8 +8,11 @@ from pykek.frontend.addon_row import AddonRowController
 
 
 class AddonsController:
-    def __init__(self, navigation_view: Adw.NavigationView) -> None:
+    def __init__(
+        self, window: Adw.ApplicationWindow, navigation_view: Adw.NavigationView
+    ) -> None:
         Config.add_listener(listener=self)
+        self._window = window
         self._navigation_view = navigation_view
         self._view = AddonsPage(self)
 
@@ -19,6 +22,9 @@ class AddonsController:
 
     def run(self) -> None:
         self._navigation_view.replace([self._view])
+
+    def get_window(self) -> Adw.ApplicationWindow:
+        return self._window
 
     ### Addons
 
@@ -102,5 +108,5 @@ class AddonsPage(Adw.NavigationPage):
             addon = self._controller.item(i)
             if not isinstance(addon, Addon):
                 continue
-            controller = AddonRowController(addon)
+            controller = AddonRowController(self._controller.get_window(), addon)
             self._list_box.append(controller.view())
