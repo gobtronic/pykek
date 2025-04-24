@@ -2,7 +2,7 @@ import threading
 from typing import List, Optional
 from gi.repository import Gtk, Adw  # type: ignore
 from pykek.backend.addon import Addon, AddonStatus, AddonStatusRepresentation
-from pykek.frontend.git_dialog import GitDialogController
+from pykek.frontend.git.dialog import GitDialogController
 
 
 class AddonRowController:

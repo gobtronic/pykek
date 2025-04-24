@@ -1,63 +1,22 @@
-import re
+from typing import Protocol
 from gi.repository import Gtk, Adw  # type: ignore
-from pykek.backend.addon import Addon
 
 
-class GitDialogController:
-    def __init__(self, window: Adw.ApplicationWindow, addon: Addon) -> None:
-        self._window = window
-        self._addon = addon
-        self._navigation_view = Adw.NavigationView()
-        self._dialog = Adw.Dialog(
-            child=self._navigation_view,
-            content_width=440,
-        )
-        setup_page = GitSetupPage(self)
-        self._navigation_view.replace([setup_page])
+class GitSetupPageHandler(Protocol):
+    def git_setup_page_entry_row_did_change(self, page, text: str) -> None:
+        pass
 
-    def run(self) -> None:
-        self._dialog.present(self._window)
-
-    def addon_name(self) -> str:
-        return self._addon.name
-
-    def close(self) -> None:
-        self._dialog.close()
-
-    def entry_row_did_change(self, page, text: str) -> None:  # type: ignore # noqa: F821
-        valid_url = self._is_valid_url(text)
-        page.enable_save_button(valid_url)
-
-    def _is_valid_url(self, text: str) -> bool:
-        pattern = re.compile(
-            r"^https://"
-            r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"
-            r"localhost|"
-            r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
-            r"\[?[A-F0-9]*:[A-F0-9:]+\]?)"
-            r"(?::\d+)?"
-            r"(?:/?|[/?]\S+)$",
-            re.IGNORECASE,
-        )
-
-        return re.match(pattern, text) is not None
-
-
-class GitDialog(Adw.Dialog):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._setup_dialog()
-
-    ### UI
-
-    def _setup_dialog(self) -> None:
-        self.set_content_width(440)
+    def git_setup_page_wants_to_close(self, page) -> None:
+        pass
 
 
 class GitSetupPage(Adw.NavigationPage):
-    def __init__(self, controller: GitDialogController, *args, **kwargs) -> None:
+    def __init__(
+        self, handler: GitSetupPageHandler, addon_name: str, *args, **kwargs
+    ) -> None:
         super().__init__(*args, **kwargs)
-        self._controller = controller
+        self._handler = handler
+        self._addon_name = addon_name
         self.set_title("Git")
         self._setup_box()
 
@@ -99,7 +58,7 @@ class GitSetupPage(Adw.NavigationPage):
     def _setup_description_label(self) -> None:
         label = Gtk.Label()
         label.set_css_classes(["dimmed"])
-        label.set_text(f"Setup {self._controller.addon_name()} git repository.")
+        label.set_text(f"Setup {self._addon_name} git repository.")
         label.set_justify(Gtk.Justification.FILL)
         label.set_hexpand(True)
         label.set_halign(Gtk.Align.START)
@@ -123,10 +82,10 @@ class GitSetupPage(Adw.NavigationPage):
     ### Actions
 
     def _on_cancel_button_click(self, button) -> None:
-        self._controller.close()
+        self._handler.git_setup_page_wants_to_close(self)
 
     def _on_entry_row_change(self, entry_row: Adw.EntryRow) -> None:
-        self._controller.entry_row_did_change(self, entry_row.get_text())
+        self._handler.git_setup_page_entry_row_did_change(self, entry_row.get_text())
 
     ### UI updates
 
