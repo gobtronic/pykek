@@ -3,20 +3,55 @@ from gi.repository import Gtk, Adw  # type: ignore
 
 
 class GitSetupPageHandler(Protocol):
-    def git_setup_page_entry_row_did_change(self, page, text: str) -> None:
+    def on_git_setup_page_entry_row_change(self, page, text: str) -> None:
         pass
 
-    def git_setup_page_wants_to_close(self, page) -> None:
+    def on_git_setup_page_close_button_click(self, page) -> None:
         pass
+
+    def on_git_setup_page_save_button_click(self, page, git_url: str) -> None:
+        pass
+
+
+class GitSetupPageController:
+    def __init__(
+        self,
+        handler: GitSetupPageHandler,
+        navigation_view: Adw.NavigationView,
+        addon_name: str,
+    ) -> None:
+        self._handler = handler
+        self._navigation_view = navigation_view
+        self._addon_name = addon_name
+        self._view = GitSetupPage(self)
+
+    def run(self):
+        self._navigation_view.push(self._view)
+
+    def addon_name(self) -> str:
+        return self._addon_name
+
+    ### Actions
+
+    def on_entry_row_change(self, page, text: str) -> None:
+        self._handler.on_git_setup_page_entry_row_change(page, text)
+
+    def on_close_button_click(self, page) -> None:
+        self._handler.on_git_setup_page_close_button_click(page)
+
+    def _on_save_button_click(self, page, git_url: str) -> None:
+        self._handler.on_git_setup_page_save_button_click(page, git_url)
 
 
 class GitSetupPage(Adw.NavigationPage):
     def __init__(
-        self, handler: GitSetupPageHandler, addon_name: str, *args, **kwargs
+        self,
+        controller: GitSetupPageController,
+        *args,
+        **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self._handler = handler
-        self._addon_name = addon_name
+        self._controller = controller
         self.set_title("Git")
         self._setup_box()
 
@@ -38,10 +73,13 @@ class GitSetupPage(Adw.NavigationPage):
         cancel_button = Gtk.Button(label="Cancel")
         cancel_button.connect("clicked", self._on_cancel_button_click)
         header_bar.pack_start(cancel_button)
+
         self._save_button = Gtk.Button(label="Save")
         self._save_button.set_css_classes(["suggested-action"])
         self._save_button.set_sensitive(False)
+        self._save_button.connect("clicked", self._on_save_button_click)
         header_bar.pack_end(self._save_button)
+
         self._box.append(header_bar)
 
     def _setup_content_box(self) -> None:
@@ -58,17 +96,17 @@ class GitSetupPage(Adw.NavigationPage):
     def _setup_description_label(self) -> None:
         label = Gtk.Label()
         label.set_css_classes(["dimmed"])
-        label.set_text(f"Setup {self._addon_name} git repository.")
+        label.set_text(f"Setup {self._controller.addon_name()} git repository.")
         label.set_justify(Gtk.Justification.FILL)
         label.set_hexpand(True)
         label.set_halign(Gtk.Align.START)
         self._content_box.append(label)
 
     def _setup_entry_row(self) -> None:
-        entry_row = Adw.EntryRow(title="Git repository URL", name="ok")
-        entry_row.set_css_classes(["card"])
-        entry_row.connect("changed", self._on_entry_row_change)
-        self._content_box.append(entry_row)
+        self._entry_row = Adw.EntryRow(title="Git repository URL", name="ok")
+        self._entry_row.set_css_classes(["card"])
+        self._entry_row.connect("changed", self._on_entry_row_change)
+        self._content_box.append(self._entry_row)
 
     def _setup_entry_row_description_label(self) -> None:
         label = Gtk.Label()
@@ -82,10 +120,13 @@ class GitSetupPage(Adw.NavigationPage):
     ### Actions
 
     def _on_cancel_button_click(self, button) -> None:
-        self._handler.git_setup_page_wants_to_close(self)
+        self._controller.on_close_button_click(self)
+
+    def _on_save_button_click(self, button) -> None:
+        self._controller._on_save_button_click(self, self._entry_row.get_text())
 
     def _on_entry_row_change(self, entry_row: Adw.EntryRow) -> None:
-        self._handler.git_setup_page_entry_row_did_change(self, entry_row.get_text())
+        self._controller.on_entry_row_change(self, entry_row.get_text())
 
     ### UI updates
 

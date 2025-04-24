@@ -1,7 +1,8 @@
 import re
 from gi.repository import Adw  # type: ignore
 from pykek.backend.addon import Addon
-from pykek.frontend.git.setup_page import GitSetupPage
+from pykek.frontend.git.download_page import GitDownloadPageController
+from pykek.frontend.git.setup_page import GitSetupPage, GitSetupPageController
 
 
 class GitDialogController:
@@ -13,10 +14,14 @@ class GitDialogController:
             child=self._navigation_view,
             content_width=440,
         )
-        setup_page = GitSetupPage(self, self._addon.name)
-        self._navigation_view.replace([setup_page])
 
     def run(self) -> None:
+        setup_controller = GitSetupPageController(
+            self,
+            self._navigation_view,
+            self._addon.name,
+        )
+        setup_controller.run()
         self._dialog.present(self._window)
 
     def entry_row_did_change(self, page: GitSetupPage, text: str) -> None:
@@ -39,7 +44,7 @@ class GitDialogController:
 
     ### GitSetupPageHandler
 
-    def git_setup_page_entry_row_did_change(
+    def on_git_setup_page_entry_row_change(
         self,
         page: GitSetupPage,
         text: str,
@@ -47,8 +52,14 @@ class GitDialogController:
         valid_url = self._is_valid_url(text)
         page.enable_save_button(valid_url)
 
-    def git_setup_page_wants_to_close(self, page: GitSetupPage) -> None:
+    def on_git_setup_page_close_button_click(self, page: GitSetupPage) -> None:
         self._dialog.close()
+
+    def on_git_setup_page_save_button_click(
+        self, page: GitSetupPage, git_url: str
+    ) -> None:
+        dl_controller = GitDownloadPageController(self._navigation_view, git_url)
+        dl_controller.run()
 
 
 class GitDialog(Adw.Dialog):
