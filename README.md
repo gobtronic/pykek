@@ -16,10 +16,10 @@ I developed this tool for myself because I wanted an addon manager with a nice, 
 
 - Update your git-versioned addons! 🔄
 - Easily switch between different addon branches 🌱
+- Link addons that are not git-versioned to a git repository 🔗
 
 ### What's coming (in no specific order)
 
-- Link addons that are not git-versioned to a git repository 🔗
 - Addons backup 💾
 - Support for multiple WoW instances 🗃️
 - Addons management (adding, ignoring and removing addons) 🖊️
