@@ -51,6 +51,7 @@ class GitSetupPage(Adw.NavigationPage):
 
         self._setup_description_label()
         self._setup_entry_row()
+        self._setup_entry_row_multiaddons_warning_label()
         self._setup_entry_row_description_label()
 
     ### UI
@@ -99,10 +100,21 @@ class GitSetupPage(Adw.NavigationPage):
         self._entry_row.connect("changed", self._on_entry_row_change)
         self._content_box.append(self._entry_row)
 
+    def _setup_entry_row_multiaddons_warning_label(self) -> None:
+        label = Gtk.Label()
+        label.set_css_classes(["warning"])
+        label.set_text(
+            "⚠️  Multiple addons in a single git repository are not supported!"
+        )
+        label.set_justify(Gtk.Justification.FILL)
+        label.set_hexpand(True)
+        label.set_halign(Gtk.Align.START)
+        self._content_box.append(label)
+
     def _setup_entry_row_description_label(self) -> None:
         label = Gtk.Label()
         label.set_css_classes(["warning"])
-        label.set_text("⚠️  This will overwrite the current addon version!")
+        label.set_text("⚠️  This action will overwrite the current addon version!")
         label.set_justify(Gtk.Justification.FILL)
         label.set_hexpand(True)
         label.set_halign(Gtk.Align.START)

@@ -94,4 +94,4 @@ class GitDialog(Adw.Dialog):
     ### UI
 
     def _setup_dialog(self) -> None:
-        self.set_content_width(440)
+        self.set_content_width(480)
