@@ -1,3 +1,4 @@
+import threading
 from gi.repository import Gtk, Adw  # type: ignore
 from loguru import logger
 
@@ -18,12 +19,17 @@ class GitDownloadPageController:
         self._addon = addon
         self._git_url = git_url
         self._view = GitDownloadPage()
-        self._view.connect("shown", self._clone_addon)
+
+        self._view.connect("shown", self._start_background_clone)
 
     def run(self) -> None:
         self._navigation_view.push(self._view)
 
-    def _clone_addon(self, _) -> None:
+    def _start_background_clone(self, _) -> None:
+        thread = threading.Thread(target=self._clone_addon)
+        thread.start()
+
+    def _clone_addon(self) -> None:
         self._addon.backup()
         try:
             Addon.clone(self._git_url, self._addon.dir_path)
