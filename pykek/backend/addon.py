@@ -5,7 +5,6 @@ from pathlib import Path
 import re
 from typing import Optional, Protocol
 from git import List, Repo
-from loguru import logger
 
 
 class AddonStatus(Enum):
