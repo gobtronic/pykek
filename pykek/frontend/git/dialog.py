@@ -58,7 +58,9 @@ class GitDialogController:
     def on_git_setup_page_save_button_click(
         self, page: GitSetupPage, git_url: str
     ) -> None:
-        dl_controller = GitDownloadPageController(self._navigation_view, git_url)
+        dl_controller = GitDownloadPageController(
+            self._navigation_view, self._addon, git_url
+        )
         dl_controller.run()
 
 

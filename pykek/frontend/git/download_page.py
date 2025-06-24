@@ -1,10 +1,28 @@
 from gi.repository import Gtk, Adw  # type: ignore
+from loguru import logger
+
+from pykek.backend.addon import Addon
 
 
 class GitDownloadPageController:
-    def __init__(self, navigation_view: Adw.NavigationView, git_url: str):
+    def __init__(self, navigation_view: Adw.NavigationView, addon: Addon, git_url: str):
         self._navigation_view = navigation_view
+        self._addon = addon
         self._view = GitDownloadPage()
+        self._clone_addon(git_url)
+
+    def _clone_addon(self, git_url: str) -> None:
+        self._addon.backup()
+        try:
+            Addon.clone(git_url, self._addon.dir_path)
+            self._addon.is_git = True
+            self._addon.reload_branches()
+            self._addon.update_status()
+            self._addon.refresh_toc_info()
+            self._addon.delete_backup()
+        except Exception as e:
+            logger.error("Error while retrieving addon", e)
+            self._addon.restore_backup()
 
     def run(self):
         self._navigation_view.push(self._view)
