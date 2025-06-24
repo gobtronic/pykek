@@ -1,31 +1,21 @@
-from typing import Protocol
 from gi.repository import Gtk, Adw  # type: ignore
 
-
-class GitSetupPageHandler(Protocol):
-    def on_git_setup_page_entry_row_change(self, page, text: str) -> None:
-        pass
-
-    def on_git_setup_page_close_button_click(self, page) -> None:
-        pass
-
-    def on_git_setup_page_save_button_click(self, page, git_url: str) -> None:
-        pass
+from pykek.frontend.git.dialog_coordinator import GitDialogCoordinator  # type: ignore
 
 
 class GitSetupPageController:
     def __init__(
         self,
-        handler: GitSetupPageHandler,
+        coordinator: GitDialogCoordinator,
         navigation_view: Adw.NavigationView,
         addon_name: str,
     ) -> None:
-        self._handler = handler
+        self._coordinator = coordinator
         self._navigation_view = navigation_view
         self._addon_name = addon_name
         self._view = GitSetupPage(self)
 
-    def run(self):
+    def run(self) -> None:
         self._navigation_view.push(self._view)
 
     def addon_name(self) -> str:
@@ -34,13 +24,13 @@ class GitSetupPageController:
     ### Actions
 
     def on_entry_row_change(self, page, text: str) -> None:
-        self._handler.on_git_setup_page_entry_row_change(page, text)
+        self._coordinator.repository_entry_row_did_change(page, text)
 
     def on_close_button_click(self, page) -> None:
-        self._handler.on_git_setup_page_close_button_click(page)
+        self._coordinator.close_button_clicked(page)
 
-    def _on_save_button_click(self, page, git_url: str) -> None:
-        self._handler.on_git_setup_page_save_button_click(page, git_url)
+    def _on_install_button_click(self, page, git_url: str) -> None:
+        self._coordinator.install_button_clicked(page, git_url)
 
 
 class GitSetupPage(Adw.NavigationPage):
@@ -52,7 +42,8 @@ class GitSetupPage(Adw.NavigationPage):
     ) -> None:
         super().__init__(*args, **kwargs)
         self._controller = controller
-        self.set_title("Git")
+        self.set_tag("setup")
+        self.set_title("Install an addon")
         self._setup_box()
 
         self._setup_header_bar()
@@ -74,11 +65,11 @@ class GitSetupPage(Adw.NavigationPage):
         cancel_button.connect("clicked", self._on_cancel_button_click)
         header_bar.pack_start(cancel_button)
 
-        self._save_button = Gtk.Button(label="Save")
-        self._save_button.set_css_classes(["suggested-action"])
-        self._save_button.set_sensitive(False)
-        self._save_button.connect("clicked", self._on_save_button_click)
-        header_bar.pack_end(self._save_button)
+        self._install_button = Gtk.Button(label="Install")
+        self._install_button.set_css_classes(["suggested-action"])
+        self._install_button.set_sensitive(False)
+        self._install_button.connect("clicked", self._on_install_button_click)
+        header_bar.pack_end(self._install_button)
 
         self._box.append(header_bar)
 
@@ -119,11 +110,11 @@ class GitSetupPage(Adw.NavigationPage):
 
     ### Actions
 
-    def _on_cancel_button_click(self, button) -> None:
+    def _on_cancel_button_click(self, _) -> None:
         self._controller.on_close_button_click(self)
 
-    def _on_save_button_click(self, button) -> None:
-        self._controller._on_save_button_click(self, self._entry_row.get_text())
+    def _on_install_button_click(self, _) -> None:
+        self._controller._on_install_button_click(self, self._entry_row.get_text())
 
     def _on_entry_row_change(self, entry_row: Adw.EntryRow) -> None:
         self._controller.on_entry_row_change(self, entry_row.get_text())
@@ -131,4 +122,4 @@ class GitSetupPage(Adw.NavigationPage):
     ### UI updates
 
     def enable_save_button(self, enabled: bool) -> None:
-        self._save_button.set_sensitive(enabled)
+        self._install_button.set_sensitive(enabled)

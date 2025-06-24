@@ -1,8 +1,10 @@
 import re
 from gi.repository import Adw  # type: ignore
+
 from pykek.backend.addon import Addon
 from pykek.frontend.git.download_page import GitDownloadPageController
 from pykek.frontend.git.setup_page import GitSetupPage, GitSetupPageController
+from pykek.frontend.git.final_page import GitFinalPageController
 
 
 class GitDialogController:
@@ -42,9 +44,9 @@ class GitDialogController:
 
         return re.match(pattern, text) is not None
 
-    ### GitSetupPageHandler
+    ### GitDialogCoordinator
 
-    def on_git_setup_page_entry_row_change(
+    def repository_entry_row_did_change(
         self,
         page: GitSetupPage,
         text: str,
@@ -52,16 +54,36 @@ class GitDialogController:
         valid_url = self._is_valid_url(text)
         page.enable_save_button(valid_url)
 
-    def on_git_setup_page_close_button_click(self, page: GitSetupPage) -> None:
+    def close_button_clicked(self, _) -> None:
         self._dialog.close()
 
-    def on_git_setup_page_save_button_click(
-        self, page: GitSetupPage, git_url: str
-    ) -> None:
+    def install_button_clicked(self, _, git_url: str) -> None:
         dl_controller = GitDownloadPageController(
-            self._navigation_view, self._addon, git_url
+            self,
+            self._navigation_view,
+            self._addon,
+            git_url,
         )
         dl_controller.run()
+
+    def install_succeed(self) -> None:
+        final_controller = GitFinalPageController(
+            self,
+            self._navigation_view,
+            True,
+        )
+        final_controller.run()
+
+    def install_failed(self) -> None:
+        final_controller = GitFinalPageController(
+            self,
+            self._navigation_view,
+            False,
+        )
+        final_controller.run()
+
+    def back_to_start_button_clicked(self, _) -> None:
+        self._navigation_view.pop_to_tag("setup")
 
 
 class GitDialog(Adw.Dialog):
