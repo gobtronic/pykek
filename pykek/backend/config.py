@@ -91,10 +91,12 @@ class Config(ABC):
             pass
 
     @staticmethod
-    def add_listener(listener: ConfigListener) -> None:
+    def add_listener(listener: ConfigListener, get_initial_value: bool) -> None:
         if Config._listeners.count(listener) > 0:
             return
         Config._listeners.append(listener)
+        if get_initial_value:
+            listener.game_instances_did_change(Config.game_instances)
 
     @staticmethod
     def remove_listener(listener: ConfigListener) -> None:

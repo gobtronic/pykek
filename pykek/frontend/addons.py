@@ -8,31 +8,19 @@ from pykek.frontend.addon_row import AddonRowController
 
 
 class AddonsController:
-    def __init__(self, navigation_view: Adw.NavigationView) -> None:
-        Config.add_listener(listener=self)
+    def __init__(
+        self, window: Adw.ApplicationWindow, navigation_view: Adw.NavigationView
+    ) -> None:
+        self._window = window
         self._navigation_view = navigation_view
         self._view = AddonsPage(self)
-
-        self._reload_instance_addons()
-        self._view.reload_list()
-        self._update_addons_status()
+        Config.add_listener(self, get_initial_value=True)
 
     def run(self) -> None:
         self._navigation_view.replace([self._view])
 
-    ### Addons
-
-    def _reload_instance_addons(self) -> None:
-        if len(Config.game_instances) > 0:
-            instance = Config.game_instances[0]
-            instance.load_addons()
-
-    def _update_addons_status(self) -> None:
-        if len(Config.game_instances) > 0:
-            instance = Config.game_instances[0]
-            for addon in instance.addons:
-                thread = threading.Thread(target=addon.update_status)
-                thread.start()
+    def get_window(self) -> Adw.ApplicationWindow:
+        return self._window
 
     ### List
 
@@ -52,8 +40,23 @@ class AddonsController:
     ### ConfigListener
 
     def game_instances_did_change(self, instances: List[GameInstance]) -> None:
-        self._reload_instance_addons()
+        if len(instances) == 0:
+            return
+        instance = instances[0]
+        instance.add_listener(self)
+        self._load_addons(instance)
+
+    def _load_addons(self, instance: GameInstance) -> None:
+        thread = threading.Thread(target=instance.load_addons)
+        thread.start()
+
+    ### GameInstanceListener
+
+    def addons_did_load(self, addons: List[Addon]) -> None:
         self._view.reload_list()
+        for addon in addons:
+            thread = threading.Thread(target=addon.update_status)
+            thread.start()
 
 
 class AddonsPage(Adw.NavigationPage):
@@ -102,5 +105,5 @@ class AddonsPage(Adw.NavigationPage):
             addon = self._controller.item(i)
             if not isinstance(addon, Addon):
                 continue
-            controller = AddonRowController(addon)
+            controller = AddonRowController(self._controller.get_window(), addon)
             self._list_box.append(controller.view())

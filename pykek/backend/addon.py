@@ -99,6 +99,10 @@ class Addon:
             current_branch="",
         )
 
+    @classmethod
+    def clone(cls, git_url: str, target_dir: str):
+        Repo.clone_from(git_url, target_dir)
+
     def add_listener(self, listener: AddonListener) -> None:
         if self._listeners.count(listener) > 0:
             return
@@ -182,6 +186,25 @@ class Addon:
             self.version = version
             for listener in self._listeners:
                 listener.addon_version_did_change(version)
+
+    def _backup_path(self) -> Path:
+        return Path(self.dir_path + ".tmpbkp")
+
+    def backup(self) -> None:
+        cur_path = Path(self.dir_path)
+        cur_path.rename(self._backup_path())
+
+    def restore_backup(self) -> None:
+        origin_path = Path(self.dir_path)
+        self._backup_path().rename(origin_path)
+
+    def delete_backup(self) -> None:
+        for root, dirs, files in self._backup_path().walk(top_down=False):
+            for name in files:
+                (root / name).unlink()
+            for name in dirs:
+                (root / name).rmdir()
+        self._backup_path().rmdir()
 
 
 def _is_git_dir(addon_dir_path: Path) -> bool:

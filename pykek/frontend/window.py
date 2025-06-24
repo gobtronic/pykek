@@ -15,7 +15,7 @@ class MainWindowController:
             self._run_onboarding()
 
     def _run_addons_page(self) -> None:
-        addons_controller = AddonsController(self._view.navigation_view)
+        addons_controller = AddonsController(self._view, self._view.navigation_view)
         addons_controller.run()
 
     def _run_onboarding(self) -> None:

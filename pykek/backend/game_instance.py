@@ -1,9 +1,14 @@
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+from typing import List, Protocol
 from loguru import logger
 import os
 from pathlib import Path
 from pykek.backend.addon import Addon
+
+
+class GameInstanceListener(Protocol):
+    def addons_did_load(self, addons: List[Addon]) -> None:
+        pass
 
 
 @dataclass
@@ -12,6 +17,10 @@ class GameInstance:
 
     dir_path: str
     addons: List[Addon]
+
+    _listeners: List[GameInstanceListener] = field(
+        init=False, repr=False, default_factory=list
+    )
 
     @classmethod
     def from_dir_path(cls, dir_path: str):
@@ -23,6 +32,14 @@ class GameInstance:
         logger.success(f"Loaded {dir_path} instance")
         return cls(dir_path, [])
 
+    def add_listener(self, listener: GameInstanceListener) -> None:
+        if self._listeners.count(listener) > 0:
+            return
+        self._listeners.append(listener)
+
+    def remove_listener(self, listener: GameInstanceListener) -> None:
+        self._listeners.remove(listener)
+
     def load_addons(self):
         self.addons.clear()
         addons_path = Path(os.path.join(self.dir_path, "Interface/AddOns"))
@@ -32,6 +49,8 @@ class GameInstance:
                 continue
             addon = Addon.from_dir_path(directory)
             self.addons.append(addon)
+        for listener in self._listeners:
+            listener.addons_did_load(self.addons)
 
 
 def _is_wow_dir(dir_path: str) -> bool:
