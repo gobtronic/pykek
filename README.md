@@ -43,7 +43,7 @@ This project has only been tested on Arch Linux, so please adapt these instructi
 
 ### Running
 
-Consider installing [uv](https://github.com/astral-sh/uv), running `uv run python.py` will take care of venv and python dependencies for you!
+Consider installing [uv](https://github.com/astral-sh/uv), running `uv run main.py` will take care of venv and python dependencies for you!
 
 ## License
 
